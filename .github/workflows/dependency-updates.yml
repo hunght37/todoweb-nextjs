@@ -1,0 +1,36 @@
+name: Dependency Updates
+
+on:
+  schedule:
+    - cron: '0 0 * * 1' # Runs at 00:00 on Monday
+  workflow_dispatch: # Allow manual trigger
+
+jobs:
+  update-dependencies:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+        cache: 'npm'
+        
+    - name: Check for updates
+      uses: renovatebot/github-action@v39.0.5
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        
+    - name: Create Pull Request
+      uses: peter-evans/create-pull-request@v5
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        commit-message: 'chore(deps): update dependencies'
+        title: '⬆️ Update dependencies'
+        body: |
+          Automated dependency updates.
+          Please review the changes and merge if everything looks good.
+        branch: dependency-updates
+        base: main

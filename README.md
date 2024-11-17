@@ -83,6 +83,50 @@ todo-app/
 - Monitor upcoming deadlines
 - Visual progress indicators
 
+## 🔄 GitHub Workflows
+
+This project uses several GitHub Actions workflows to ensure code quality and security:
+
+### 1. CI/CD Pipeline
+- 🔄 Automatic builds and tests on every push and pull request
+- 🚀 Automatic deployment to Vercel for main branch
+- ✅ TypeScript type checking
+- 🔍 Linting checks
+
+### 2. Code Quality
+- 📊 ESLint for code style enforcement
+- 💅 Prettier for code formatting
+- 🔍 SonarCloud for code quality analysis
+- ⚡ TypeScript strict mode checks
+
+### 3. Dependency Updates
+- 📦 Weekly dependency checks (Mondays)
+- 🔄 Automatic pull requests for updates
+- 🛡️ Security vulnerability patches
+- 🤖 Automated version bumps
+
+### 4. Security Scanning
+- 🛡️ Snyk vulnerability scanning
+- 🔒 GitHub CodeQL analysis
+- 📊 npm audit checks
+- 🔄 Weekly security reports
+
+### Required Secrets
+To enable all workflows, set up these secrets in your GitHub repository:
+
+```bash
+# Vercel Deployment
+VERCEL_TOKEN=<your-vercel-token>
+VERCEL_ORG_ID=<your-org-id>
+VERCEL_PROJECT_ID=<your-project-id>
+
+# Code Quality
+SONAR_TOKEN=<your-sonar-token>
+
+# Security
+SNYK_TOKEN=<your-snyk-token>
+```
+
 ## 🤝 Contributing
 
 Contributions are welcome! Feel free to:
