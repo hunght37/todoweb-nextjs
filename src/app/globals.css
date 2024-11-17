@@ -1,0 +1,40 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --drive-bg: #f6f9fc;
+  --drive-header: #ffffff;
+  --drive-text: #3c4043;
+  --drive-border: #dadce0;
+  --drive-hover: #f1f3f4;
+  --drive-blue: #1a73e8;
+  --drive-green: #188038;
+}
+
+body {
+  background-color: var(--drive-bg);
+  color: var(--drive-text);
+  min-height: 100vh;
+}
+
+.drive-shadow {
+  box-shadow: 0 1px 2px 0 rgba(60, 64, 67, 0.3), 0 1px 3px 1px rgba(60, 64, 67, 0.15);
+}
+
+.drive-button {
+  @apply px-6 py-2 rounded-full font-medium transition-colors duration-200;
+}
+
+.drive-button-primary {
+  @apply bg-[var(--drive-blue)] text-white hover:bg-opacity-90;
+}
+
+.drive-button-secondary {
+  @apply bg-[var(--drive-hover)] text-[var(--drive-text)] hover:bg-opacity-80;
+}
+
+.drive-input {
+  @apply w-full px-4 py-2 rounded-lg border border-[var(--drive-border)] 
+  focus:outline-none focus:ring-2 focus:ring-[var(--drive-blue)] focus:border-transparent;
+}
