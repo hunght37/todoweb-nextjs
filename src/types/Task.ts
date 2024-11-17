@@ -42,4 +42,6 @@ export interface TaskStatistics {
     low: number;
   };
   byCategory: Record<string, number>;
+  completionRate: number;
+  upcomingDeadlines: number;
 }

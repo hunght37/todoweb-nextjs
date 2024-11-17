@@ -123,6 +123,7 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
   const calculateStatistics = useCallback(() => {
     const completed = tasks.filter(task => task.completed).length;
     const active = tasks.length - completed;
+    const total = tasks.length;
 
     const byPriority = {
       high: tasks.filter(task => task.priority === 'high').length,
@@ -137,12 +138,24 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
       return acc;
     }, {} as Record<string, number>);
 
+    const completionRate = total > 0 ? Math.round((completed / total) * 100) : 0;
+
+    const upcomingDeadlines = tasks.filter((task) => {
+      if (!task.deadline || task.completed) return false;
+      const deadline = new Date(task.deadline);
+      const today = new Date();
+      const diffDays = Math.ceil((deadline.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+      return diffDays <= 7 && diffDays >= 0;
+    }).length;
+
     return {
-      total: tasks.length,
+      total,
       completed,
       active,
       byPriority,
       byCategory,
+      completionRate,
+      upcomingDeadlines,
     };
   }, [tasks]);
 
