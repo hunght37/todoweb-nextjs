@@ -1,109 +1,129 @@
 'use client';
 
-import { useState } from 'react';
-import { useTask } from '@/context/TaskContext';
-import { useTheme } from '@/context/ThemeContext';
-import TaskCard from '@/components/TaskCard';
-import ThemeToggle from '@/components/ThemeToggle';
+import React, { useState } from 'react';
+import { useTask } from '../context/TaskContext';
+import TaskCard from '../components/TaskCard';
+import TaskStatistics from '../components/TaskStatistics';
+import TaskFilter from '../components/TaskFilter';
+import { Priority } from '../types/Task';
 
 export default function Home() {
-  const { tasks, templates, categories, addTask } = useTask();
-  const [newTaskTitle, setNewTaskTitle] = useState('');
-  const [selectedTemplate, setSelectedTemplate] = useState<string>('');
+  const { addTask, getFilteredTasks } = useTask();
+  const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
+  const [priority, setPriority] = useState<Priority>('medium');
+  const [deadline, setDeadline] = useState('');
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
 
-  const handleAddTask = (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newTaskTitle.trim()) return;
+    if (!title.trim()) return;
 
-    const template = templates.find(t => t.id === selectedTemplate);
-    
     addTask({
-      title: newTaskTitle,
+      title: title.trim(),
+      description: description.trim(),
       completed: false,
-      categories: template ? template.categories : selectedCategories,
       progress: 0,
+      categories: selectedCategories,
+      priority,
+      deadline: deadline ? new Date(deadline) : undefined,
     });
 
-    setNewTaskTitle('');
-    setSelectedTemplate('');
+    setTitle('');
+    setDescription('');
+    setPriority('medium');
+    setDeadline('');
     setSelectedCategories([]);
   };
 
-  const toggleCategory = (categoryId: string) => {
-    setSelectedCategories(prev =>
-      prev.includes(categoryId)
-        ? prev.filter(id => id !== categoryId)
-        : [...prev, categoryId]
-    );
-  };
+  const tasks = getFilteredTasks();
 
   return (
-    <main className="min-h-screen p-4 sm:p-8 bg-gray-50 dark:bg-gray-900">
+    <main className="container mx-auto px-4 py-8">
       <div className="max-w-4xl mx-auto">
-        <div className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Todo App</h1>
-          <ThemeToggle />
-        </div>
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-8">Todo App</h1>
 
-        <form onSubmit={handleAddTask} className="mb-8 space-y-4">
-          <div className="flex gap-4">
-            <input
-              type="text"
-              value={newTaskTitle}
-              onChange={(e) => setNewTaskTitle(e.target.value)}
-              placeholder="Add a new task..."
-              className="flex-1 px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
-            />
+        <TaskStatistics />
+
+        <form onSubmit={handleSubmit} className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-8">
+          <div className="space-y-4">
+            <div>
+              <label htmlFor="title" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                Task Title
+              </label>
+              <input
+                type="text"
+                id="title"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                placeholder="Enter task title"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="description" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                Description (optional)
+              </label>
+              <textarea
+                id="description"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                rows={3}
+                placeholder="Enter task description"
+              />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label htmlFor="priority" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Priority
+                </label>
+                <select
+                  id="priority"
+                  value={priority}
+                  onChange={(e) => setPriority(e.target.value as Priority)}
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                >
+                  <option value="high">High</option>
+                  <option value="medium">Medium</option>
+                  <option value="low">Low</option>
+                </select>
+              </div>
+
+              <div>
+                <label htmlFor="deadline" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Deadline (optional)
+                </label>
+                <input
+                  type="date"
+                  id="deadline"
+                  value={deadline}
+                  onChange={(e) => setDeadline(e.target.value)}
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                />
+              </div>
+            </div>
+
             <button
               type="submit"
-              className="btn btn-primary"
+              className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
             >
               Add Task
             </button>
           </div>
-
-          <div className="flex flex-wrap gap-2">
-            {categories.map(category => (
-              <button
-                key={category.id}
-                type="button"
-                onClick={() => toggleCategory(category.id)}
-                className={`category-tag ${
-                  selectedCategories.includes(category.id)
-                    ? 'ring-2 ring-offset-2 ring-primary-500'
-                    : ''
-                }`}
-                style={{
-                  backgroundColor: `${category.color}20`,
-                  color: category.color,
-                }}
-              >
-                {category.name}
-              </button>
-            ))}
-          </div>
-
-          {templates.length > 0 && (
-            <select
-              value={selectedTemplate}
-              onChange={(e) => setSelectedTemplate(e.target.value)}
-              className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
-            >
-              <option value="">Select a template...</option>
-              {templates.map(template => (
-                <option key={template.id} value={template.id}>
-                  {template.title}
-                </option>
-              ))}
-            </select>
-          )}
         </form>
 
+        <TaskFilter />
+
         <div className="space-y-4">
-          {tasks.map(task => (
+          {tasks.map((task) => (
             <TaskCard key={task.id} task={task} />
           ))}
+          {tasks.length === 0 && (
+            <p className="text-center text-gray-500 dark:text-gray-400">No tasks found.</p>
+          )}
         </div>
       </div>
     </main>

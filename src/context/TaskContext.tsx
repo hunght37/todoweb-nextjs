@@ -1,48 +1,80 @@
 'use client';
 
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { Task, TaskTemplate, Category } from '@/types/Task';
+import React, { createContext, useContext, useState, useEffect } from 'react';
+import { Task, TaskTemplate, Priority, TaskStatus, TaskStatistics, Category } from '../types/Task';
 
 interface TaskContextType {
   tasks: Task[];
   templates: TaskTemplate[];
   categories: Category[];
+  selectedStatus: TaskStatus;
+  statistics: TaskStatistics;
   addTask: (task: Omit<Task, 'id' | 'createdAt'>) => void;
   updateTask: (id: string, updates: Partial<Task>) => void;
   deleteTask: (id: string) => void;
   addTemplate: (template: Omit<TaskTemplate, 'id'>) => void;
   addCategory: (category: Omit<Category, 'id'>) => void;
-  deleteCategory: (id: string) => void;
+  setSelectedStatus: (status: TaskStatus) => void;
+  getFilteredTasks: () => Task[];
 }
 
 const TaskContext = createContext<TaskContextType | undefined>(undefined);
 
 const defaultCategories: Category[] = [
-  { id: '1', name: 'Work', color: '#0ea5e9' },
-  { id: '2', name: 'Personal', color: '#22c55e' },
-  { id: '3', name: 'Shopping', color: '#f59e0b' },
+  { id: '1', name: 'Work', color: '#FF5733' },
+  { id: '2', name: 'Personal', color: '#33FF57' },
+  { id: '3', name: 'Shopping', color: '#3357FF' },
 ];
 
-export function TaskProvider({ children }: { children: ReactNode }) {
+export function TaskProvider({ children }: { children: React.ReactNode }) {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [templates, setTemplates] = useState<TaskTemplate[]>([]);
   const [categories, setCategories] = useState<Category[]>(defaultCategories);
+  const [selectedStatus, setSelectedStatus] = useState<TaskStatus>('all');
 
+  // Load tasks from localStorage on mount
   useEffect(() => {
     const savedTasks = localStorage.getItem('tasks');
-    const savedTemplates = localStorage.getItem('templates');
-    const savedCategories = localStorage.getItem('categories');
-
-    if (savedTasks) setTasks(JSON.parse(savedTasks));
-    if (savedTemplates) setTemplates(JSON.parse(savedTemplates));
-    if (savedCategories) setCategories(JSON.parse(savedCategories));
+    if (savedTasks) {
+      setTasks(JSON.parse(savedTasks));
+    }
+    const savedTemplates = localStorage.getItem('taskTemplates');
+    if (savedTemplates) {
+      setTemplates(JSON.parse(savedTemplates));
+    }
   }, []);
 
+  // Save tasks to localStorage whenever they change
   useEffect(() => {
     localStorage.setItem('tasks', JSON.stringify(tasks));
-    localStorage.setItem('templates', JSON.stringify(templates));
-    localStorage.setItem('categories', JSON.stringify(categories));
-  }, [tasks, templates, categories]);
+    localStorage.setItem('taskTemplates', JSON.stringify(templates));
+  }, [tasks, templates]);
+
+  const calculateStatistics = (): TaskStatistics => {
+    const completed = tasks.filter(task => task.completed).length;
+    const active = tasks.length - completed;
+
+    const byPriority = {
+      high: tasks.filter(task => task.priority === 'high').length,
+      medium: tasks.filter(task => task.priority === 'medium').length,
+      low: tasks.filter(task => task.priority === 'low').length,
+    };
+
+    const byCategory = tasks.reduce((acc, task) => {
+      task.categories.forEach(cat => {
+        acc[cat] = (acc[cat] || 0) + 1;
+      });
+      return acc;
+    }, {} as Record<string, number>);
+
+    return {
+      total: tasks.length,
+      completed,
+      active,
+      byPriority,
+      byCategory,
+    };
+  };
 
   const addTask = (taskData: Omit<Task, 'id' | 'createdAt'>) => {
     const newTask: Task = {
@@ -54,9 +86,11 @@ export function TaskProvider({ children }: { children: ReactNode }) {
   };
 
   const updateTask = (id: string, updates: Partial<Task>) => {
-    setTasks(prev => prev.map(task => 
-      task.id === id ? { ...task, ...updates } : task
-    ));
+    setTasks(prev =>
+      prev.map(task =>
+        task.id === id ? { ...task, ...updates } : task
+      )
+    );
   };
 
   const deleteTask = (id: string) => {
@@ -79,25 +113,30 @@ export function TaskProvider({ children }: { children: ReactNode }) {
     setCategories(prev => [...prev, newCategory]);
   };
 
-  const deleteCategory = (id: string) => {
-    setCategories(prev => prev.filter(category => category.id !== id));
+  const getFilteredTasks = () => {
+    return tasks.filter(task => {
+      if (selectedStatus === 'all') return true;
+      if (selectedStatus === 'completed') return task.completed;
+      return !task.completed;
+    });
   };
 
-  return (
-    <TaskContext.Provider value={{
-      tasks,
-      templates,
-      categories,
-      addTask,
-      updateTask,
-      deleteTask,
-      addTemplate,
-      addCategory,
-      deleteCategory,
-    }}>
-      {children}
-    </TaskContext.Provider>
-  );
+  const value = {
+    tasks,
+    templates,
+    categories,
+    selectedStatus,
+    statistics: calculateStatistics(),
+    addTask,
+    updateTask,
+    deleteTask,
+    addTemplate,
+    addCategory,
+    setSelectedStatus,
+    getFilteredTasks,
+  };
+
+  return <TaskContext.Provider value={value}>{children}</TaskContext.Provider>;
 }
 
 export function useTask() {
