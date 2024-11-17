@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, ReactNode } from 'react';
 import { useTask } from '../context/TaskContext';
 import TaskCard from '../components/TaskCard';
 import TaskStatistics from '../components/TaskStatistics';
@@ -151,7 +151,7 @@ export default function Home() {
 
             {/* Task List */}
             <DragDropContext onDragEnd={handleDragEnd}>
-              {Object.entries(groupedTasks).map(([group, groupTasks]) => (
+              {Object.entries(groupedTasks).map(([group, groupTasks]): ReactNode => (
                 <div key={group} className="space-y-4">
                   <h3 className="text-lg font-medium text-gray-900 dark:text-white">
                     {group}
