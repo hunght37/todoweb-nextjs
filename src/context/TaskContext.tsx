@@ -1,7 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { Task, TaskTemplate, Priority, TaskStatus, TaskStatistics, Category } from '../types/Task';
+import { Task, TaskTemplate, Priority, TaskStatus, TaskStatistics, Category, SubTask } from '../types/Task';
 
 interface TaskContextType {
   tasks: Task[];
@@ -17,6 +17,10 @@ interface TaskContextType {
   addCategory: (category: Omit<Category, 'id'>) => void;
   setSelectedStatus: (status: TaskStatus) => void;
   getFilteredTasks: () => Task[];
+  addSubTask: (taskId: string, title: string) => void;
+  updateSubTask: (taskId: string, subTaskId: string, completed: boolean) => void;
+  deleteSubTask: (taskId: string, subTaskId: string) => void;
+  reorderTasks: (startIndex: number, endIndex: number) => void;
 }
 
 const TaskContext = createContext<TaskContextType | undefined>(undefined);
@@ -120,6 +124,69 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
     setCategories(prev => [...prev, newCategory]);
   };
 
+  const addSubTask = (taskId: string, title: string) => {
+    const now = new Date();
+    const newSubTask: SubTask = {
+      id: `subtask-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      title,
+      completed: false,
+      createdAt: now,
+    };
+
+    setTasks(prev => prev.map(task => 
+      task.id === taskId 
+        ? { 
+            ...task, 
+            subtasks: [...(task.subtasks || []), newSubTask],
+            updatedAt: now 
+          }
+        : task
+    ));
+  };
+
+  const updateSubTask = (taskId: string, subTaskId: string, completed: boolean) => {
+    setTasks(prev => prev.map(task => 
+      task.id === taskId 
+        ? { 
+            ...task, 
+            subtasks: task.subtasks?.map(subtask =>
+              subtask.id === subTaskId 
+                ? { ...subtask, completed }
+                : subtask
+            ),
+            updatedAt: new Date()
+          }
+        : task
+    ));
+  };
+
+  const deleteSubTask = (taskId: string, subTaskId: string) => {
+    setTasks(prev => prev.map(task => 
+      task.id === taskId 
+        ? { 
+            ...task, 
+            subtasks: task.subtasks?.filter(subtask => subtask.id !== subTaskId),
+            updatedAt: new Date()
+          }
+        : task
+    ));
+  };
+
+  const reorderTasks = (startIndex: number, endIndex: number) => {
+    setTasks(prev => {
+      const result = Array.from(prev);
+      const [removed] = result.splice(startIndex, 1);
+      result.splice(endIndex, 0, removed);
+      
+      // Update order for all tasks
+      return result.map((task, index) => ({
+        ...task,
+        order: index,
+        updatedAt: new Date()
+      }));
+    });
+  };
+
   const calculateStatistics = useCallback(() => {
     const completed = tasks.filter(task => task.completed).length;
     const active = tasks.length - completed;
@@ -186,6 +253,10 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
     addCategory,
     setSelectedStatus,
     getFilteredTasks,
+    addSubTask,
+    updateSubTask,
+    deleteSubTask,
+    reorderTasks,
   };
 
   return <TaskContext.Provider value={value}>{children}</TaskContext.Provider>;

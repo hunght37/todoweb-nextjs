@@ -15,15 +15,24 @@ export interface Task {
   id: string;
   title: string;
   description?: string;
+  priority: Priority;
   completed: boolean;
   progress: number;
-  priority: Priority;
   categories: string[];
   deadline?: Date;
+  estimatedTime?: number;
   createdAt: Date;
   updatedAt: Date;
   template?: string; // template id if created from template
-  estimatedTime?: number;
+  subtasks?: SubTask[];
+  order?: number;
+}
+
+export interface SubTask {
+  id: string;
+  title: string;
+  completed: boolean;
+  createdAt: Date;
 }
 
 export type Category = {

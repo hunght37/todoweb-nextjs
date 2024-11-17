@@ -12,6 +12,10 @@ A modern, feature-rich todo application built with Next.js and TypeScript. This 
 - 🌓 Dark/Light mode support
 - 📱 Responsive design for all devices
 - 💾 Local storage persistence
+- 🔄 Drag & Drop task reordering
+- 📝 Subtasks support
+- 📋 Flexible task grouping (by day/week/month)
+- 🔍 Multiple sorting options (priority/deadline/creation date)
 
 ## 🛠️ Technologies Used
 
@@ -19,6 +23,7 @@ A modern, feature-rich todo application built with Next.js and TypeScript. This 
 - **[Next.js](https://nextjs.org/)** (v13.4) - React framework for production
 - **[React](https://reactjs.org/)** (v18.2) - Frontend library
 - **[TypeScript](https://www.typescriptlang.org/)** (v5.1) - Type safety and enhanced developer experience
+- **[@hello-pangea/dnd](https://github.com/hello-pangea/dnd)** - Drag & Drop functionality
 
 ### Styling and UI
 - **[Tailwind CSS](https://tailwindcss.com/)** (v3.3) - Utility-first CSS framework
@@ -71,6 +76,10 @@ todo-app/
 - Set deadlines and track progress
 - Organize tasks with categories
 - Mark tasks as complete/incomplete
+- Add and manage subtasks
+- Drag & Drop reordering
+- Group tasks by day, week, or month
+- Sort tasks by priority, deadline, or creation date
 
 ### Task Templates
 - Create reusable task templates
