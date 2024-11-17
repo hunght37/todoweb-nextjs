@@ -1,25 +1,29 @@
 export type Priority = 'high' | 'medium' | 'low';
 
+export type TaskStatus = 'all' | 'active' | 'completed';
+
+export type TaskTemplate = {
+  id: string;
+  name: string;
+  description?: string;
+  categories: string[];
+  priority: Priority;
+  estimatedTime?: number;
+};
+
 export interface Task {
   id: string;
   title: string;
   description?: string;
   completed: boolean;
-  createdAt: Date;
+  progress: number;
+  priority: Priority;
+  categories: string[];
   deadline?: Date;
-  categories: string[];
-  progress: number; // 0-100
-  priority: Priority;
-  template?: boolean;
-}
-
-export interface TaskTemplate {
-  id: string;
-  title: string;
-  description?: string;
-  categories: string[];
-  priority: Priority;
-  isTemplate: true;
+  createdAt: Date;
+  updatedAt: Date;
+  template?: string; // template id if created from template
+  estimatedTime?: number;
 }
 
 export type Category = {
@@ -27,8 +31,6 @@ export type Category = {
   name: string;
   color: string;
 };
-
-export type TaskStatus = 'all' | 'active' | 'completed';
 
 export interface TaskStatistics {
   total: number;

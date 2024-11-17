@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { Task, TaskTemplate, Priority, TaskStatus, TaskStatistics, Category } from '../types/Task';
 
 interface TaskContextType {
@@ -8,8 +8,9 @@ interface TaskContextType {
   templates: TaskTemplate[];
   categories: Category[];
   selectedStatus: TaskStatus;
+  isLoading: boolean;
   statistics: TaskStatistics;
-  addTask: (task: Omit<Task, 'id' | 'createdAt'>) => void;
+  addTask: (task: Omit<Task, 'id' | 'createdAt' | 'updatedAt'>) => void;
   updateTask: (id: string, updates: Partial<Task>) => void;
   deleteTask: (id: string) => void;
   addTemplate: (template: Omit<TaskTemplate, 'id'>) => void;
@@ -31,26 +32,95 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
   const [templates, setTemplates] = useState<TaskTemplate[]>([]);
   const [categories, setCategories] = useState<Category[]>(defaultCategories);
   const [selectedStatus, setSelectedStatus] = useState<TaskStatus>('all');
+  const [isLoading, setIsLoading] = useState(true);
 
   // Load tasks from localStorage on mount
   useEffect(() => {
-    const savedTasks = localStorage.getItem('tasks');
-    if (savedTasks) {
-      setTasks(JSON.parse(savedTasks));
-    }
-    const savedTemplates = localStorage.getItem('taskTemplates');
-    if (savedTemplates) {
-      setTemplates(JSON.parse(savedTemplates));
+    try {
+      setIsLoading(true);
+      const savedTasks = localStorage.getItem('tasks');
+      const savedTemplates = localStorage.getItem('taskTemplates');
+      const savedCategories = localStorage.getItem('categories');
+
+      if (savedTasks) {
+        const parsedTasks = JSON.parse(savedTasks);
+        // Convert string dates back to Date objects
+        const tasksWithDates = parsedTasks.map((task: any) => ({
+          ...task,
+          createdAt: new Date(task.createdAt),
+          updatedAt: new Date(task.updatedAt),
+          deadline: task.deadline ? new Date(task.deadline) : undefined,
+        }));
+        setTasks(tasksWithDates);
+      }
+
+      if (savedTemplates) {
+        setTemplates(JSON.parse(savedTemplates));
+      }
+
+      if (savedCategories) {
+        setCategories(JSON.parse(savedCategories));
+      }
+    } catch (error) {
+      console.error('Error loading data from localStorage:', error);
+    } finally {
+      setIsLoading(false);
     }
   }, []);
 
   // Save tasks to localStorage whenever they change
   useEffect(() => {
-    localStorage.setItem('tasks', JSON.stringify(tasks));
-    localStorage.setItem('taskTemplates', JSON.stringify(templates));
-  }, [tasks, templates]);
+    try {
+      localStorage.setItem('tasks', JSON.stringify(tasks));
+      localStorage.setItem('taskTemplates', JSON.stringify(templates));
+      localStorage.setItem('categories', JSON.stringify(categories));
+    } catch (error) {
+      console.error('Error saving data to localStorage:', error);
+    }
+  }, [tasks, templates, categories]);
 
-  const calculateStatistics = (): TaskStatistics => {
+  const addTask = (taskData: Omit<Task, 'id' | 'createdAt' | 'updatedAt'>) => {
+    const now = new Date();
+    const newTask: Task = {
+      ...taskData,
+      id: `task-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      createdAt: now,
+      updatedAt: now,
+    };
+    setTasks(prev => [...prev, newTask]);
+  };
+
+  const updateTask = (id: string, updates: Partial<Task>) => {
+    setTasks(prev =>
+      prev.map(task =>
+        task.id === id
+          ? { ...task, ...updates, updatedAt: new Date() }
+          : task
+      )
+    );
+  };
+
+  const deleteTask = (id: string) => {
+    setTasks(prev => prev.filter(task => task.id !== id));
+  };
+
+  const addTemplate = (templateData: Omit<TaskTemplate, 'id'>) => {
+    const newTemplate: TaskTemplate = {
+      ...templateData,
+      id: `template-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+    };
+    setTemplates(prev => [...prev, newTemplate]);
+  };
+
+  const addCategory = (categoryData: Omit<Category, 'id'>) => {
+    const newCategory: Category = {
+      ...categoryData,
+      id: `category-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+    };
+    setCategories(prev => [...prev, newCategory]);
+  };
+
+  const calculateStatistics = useCallback(() => {
     const completed = tasks.filter(task => task.completed).length;
     const active = tasks.length - completed;
 
@@ -74,58 +144,27 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
       byPriority,
       byCategory,
     };
-  };
+  }, [tasks]);
 
-  const addTask = (taskData: Omit<Task, 'id' | 'createdAt'>) => {
-    const newTask: Task = {
-      ...taskData,
-      id: Date.now().toString(),
-      createdAt: new Date(),
-    };
-    setTasks(prev => [...prev, newTask]);
-  };
-
-  const updateTask = (id: string, updates: Partial<Task>) => {
-    setTasks(prev =>
-      prev.map(task =>
-        task.id === id ? { ...task, ...updates } : task
-      )
-    );
-  };
-
-  const deleteTask = (id: string) => {
-    setTasks(prev => prev.filter(task => task.id !== id));
-  };
-
-  const addTemplate = (templateData: Omit<TaskTemplate, 'id'>) => {
-    const newTemplate: TaskTemplate = {
-      ...templateData,
-      id: Date.now().toString(),
-    };
-    setTemplates(prev => [...prev, newTemplate]);
-  };
-
-  const addCategory = (categoryData: Omit<Category, 'id'>) => {
-    const newCategory: Category = {
-      ...categoryData,
-      id: Date.now().toString(),
-    };
-    setCategories(prev => [...prev, newCategory]);
-  };
-
-  const getFilteredTasks = () => {
+  const getFilteredTasks = useCallback(() => {
     return tasks.filter(task => {
-      if (selectedStatus === 'all') return true;
-      if (selectedStatus === 'completed') return task.completed;
-      return !task.completed;
+      switch (selectedStatus) {
+        case 'active':
+          return !task.completed;
+        case 'completed':
+          return task.completed;
+        default:
+          return true;
+      }
     });
-  };
+  }, [tasks, selectedStatus]);
 
   const value = {
     tasks,
     templates,
     categories,
     selectedStatus,
+    isLoading,
     statistics: calculateStatistics(),
     addTask,
     updateTask,

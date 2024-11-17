@@ -1,20 +1,22 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Todo } from '@/types';
 import { FaPlus, FaFlag } from 'react-icons/fa';
+import { Task, Priority } from '../types/Task';
 
 interface TodoFormProps {
-  onSubmit: (title: string, description: string, priority: Todo['priority'], deadline?: string) => void;
-  initialData?: Todo;
+  onSubmit: (task: Omit<Task, 'id' | 'createdAt' | 'updatedAt'>) => void;
+  initialData?: Task;
   onCancel?: () => void;
 }
 
 export default function TodoForm({ onSubmit, initialData, onCancel }: TodoFormProps) {
   const [title, setTitle] = useState(initialData?.title || '');
   const [description, setDescription] = useState(initialData?.description || '');
-  const [priority, setPriority] = useState<Todo['priority']>(initialData?.priority || 'Medium');
-  const [deadline, setDeadline] = useState(initialData?.deadline || '');
+  const [priority, setPriority] = useState<Priority>(initialData?.priority || 'medium');
+  const [deadline, setDeadline] = useState(initialData?.deadline ? new Date(initialData.deadline).toISOString().split('T')[0] : '');
+  const [categories, setCategories] = useState<string[]>(initialData?.categories || []);
+  const [estimatedTime, setEstimatedTime] = useState<number | undefined>(initialData?.estimatedTime);
   const [error, setError] = useState('');
   const [isExpanded, setIsExpanded] = useState(!!initialData);
 
@@ -23,7 +25,9 @@ export default function TodoForm({ onSubmit, initialData, onCancel }: TodoFormPr
       setTitle(initialData.title);
       setDescription(initialData.description || '');
       setPriority(initialData.priority);
-      setDeadline(initialData.deadline || '');
+      setDeadline(initialData.deadline ? new Date(initialData.deadline).toISOString().split('T')[0] : '');
+      setCategories(initialData.categories);
+      setEstimatedTime(initialData.estimatedTime);
       setIsExpanded(true);
     }
   }, [initialData]);
@@ -47,35 +51,48 @@ export default function TodoForm({ onSubmit, initialData, onCancel }: TodoFormPr
       return;
     }
 
-    onSubmit(title.trim(), description.trim(), priority, deadline);
+    const newTask: Omit<Task, 'id' | 'createdAt' | 'updatedAt'> = {
+      title: title.trim(),
+      description: description.trim(),
+      priority,
+      completed: false,
+      progress: 0,
+      categories,
+      deadline: deadline ? new Date(deadline) : undefined,
+      estimatedTime,
+    };
+
+    onSubmit(newTask);
 
     if (!initialData) {
       setTitle('');
       setDescription('');
-      setPriority('Medium');
+      setPriority('medium');
       setDeadline('');
+      setCategories([]);
+      setEstimatedTime(undefined);
       setIsExpanded(false);
     }
   };
 
-  const getPriorityColor = (p: Todo['priority']) => {
+  const getPriorityColor = (p: Priority): string => {
     switch (p) {
-      case 'High': return 'text-red-500';
-      case 'Medium': return 'text-yellow-500';
-      case 'Low': return 'text-green-500';
+      case 'high': return 'text-red-500';
+      case 'medium': return 'text-yellow-500';
+      case 'low': return 'text-green-500';
       default: return 'text-gray-500';
     }
   };
 
   return (
     <form onSubmit={handleSubmit} className="mb-6">
-      <div className={`bg-white rounded-lg drive-shadow transition-all duration-200 ${isExpanded ? 'p-6' : 'p-4'}`}>
+      <div className={`bg-white dark:bg-gray-800 rounded-lg drive-shadow transition-all duration-200 ${isExpanded ? 'p-6' : 'p-4'}`}>
         {!isExpanded ? (
           <div
             onClick={() => setIsExpanded(true)}
-            className="flex items-center text-[var(--drive-text)] cursor-pointer hover:bg-[var(--drive-hover)] rounded-lg p-2 -m-2"
+            className="flex items-center text-[var(--theme-text)] cursor-pointer hover:bg-[var(--theme-hover)] rounded-lg p-2 -m-2"
           >
-            <FaPlus className="w-5 h-5 mr-3 text-[var(--drive-blue)]" />
+            <FaPlus className="w-5 h-5 mr-3 text-[var(--theme-primary)]" />
             <span className="text-sm">Add a task</span>
           </div>
         ) : (
@@ -85,7 +102,7 @@ export default function TodoForm({ onSubmit, initialData, onCancel }: TodoFormPr
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="Task title"
-              className="drive-input mb-4"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[var(--theme-primary)] dark:bg-gray-700 dark:border-gray-600 dark:text-white mb-4"
               autoFocus
             />
             <textarea
@@ -93,62 +110,61 @@ export default function TodoForm({ onSubmit, initialData, onCancel }: TodoFormPr
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Add details"
               rows={3}
-              className="drive-input mb-4 resize-none"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[var(--theme-primary)] dark:bg-gray-700 dark:border-gray-600 dark:text-white mb-4 resize-none"
             />
             <div className="flex flex-wrap gap-4 mb-4">
               <div className="flex-1 min-w-[200px]">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Priority</label>
+                <label className="block text-sm font-medium text-[var(--theme-text)] mb-1">Priority</label>
                 <div className="relative">
                   <select
                     value={priority}
-                    onChange={(e) => setPriority(e.target.value as Todo['priority'])}
-                    className="drive-input pr-10 appearance-none"
+                    onChange={(e) => setPriority(e.target.value as Priority)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[var(--theme-primary)] dark:bg-gray-700 dark:border-gray-600 dark:text-white appearance-none"
                   >
-                    <option value="High">High</option>
-                    <option value="Medium">Medium</option>
-                    <option value="Low">Low</option>
+                    <option value="low">Low</option>
+                    <option value="medium">Medium</option>
+                    <option value="high">High</option>
                   </select>
-                  <FaFlag className={`absolute right-3 top-1/2 -translate-y-1/2 ${getPriorityColor(priority)}`} />
+                  <FaFlag className={`absolute right-3 top-3 ${getPriorityColor(priority)}`} />
                 </div>
               </div>
               <div className="flex-1 min-w-[200px]">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Deadline</label>
+                <label className="block text-sm font-medium text-[var(--theme-text)] mb-1">Deadline</label>
                 <input
-                  type="datetime-local"
+                  type="date"
                   value={deadline}
                   onChange={(e) => setDeadline(e.target.value)}
-                  className="drive-input"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[var(--theme-primary)] dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                />
+              </div>
+              <div className="flex-1 min-w-[200px]">
+                <label className="block text-sm font-medium text-[var(--theme-text)] mb-1">Estimated Time (hours)</label>
+                <input
+                  type="number"
+                  value={estimatedTime || ''}
+                  onChange={(e) => setEstimatedTime(e.target.value ? Number(e.target.value) : undefined)}
+                  min="0"
+                  step="0.5"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[var(--theme-primary)] dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                 />
               </div>
             </div>
-            {error && (
-              <p className="text-red-600 text-sm mb-4" role="alert">
-                {error}
-              </p>
-            )}
-            <div className="flex justify-end space-x-3">
-              {onCancel ? (
+            {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
+            <div className="flex justify-end space-x-2">
+              {onCancel && (
                 <button
                   type="button"
                   onClick={onCancel}
-                  className="drive-button drive-button-secondary"
-                >
-                  Cancel
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => setIsExpanded(false)}
-                  className="drive-button drive-button-secondary"
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[var(--theme-primary)] dark:bg-gray-700 dark:text-white dark:border-gray-600 dark:hover:bg-gray-600"
                 >
                   Cancel
                 </button>
               )}
               <button
                 type="submit"
-                className="drive-button drive-button-primary"
+                className="px-4 py-2 text-sm font-medium text-white bg-[var(--theme-primary)] rounded-md hover:bg-[var(--theme-primary-dark)] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[var(--theme-primary)]"
               >
-                {initialData ? 'Save' : 'Add task'}
+                {initialData ? 'Update Task' : 'Add Task'}
               </button>
             </div>
           </>

@@ -2,69 +2,120 @@
 
 import React from 'react';
 import { useTask } from '../context/TaskContext';
+import { Task, Priority, TaskStatistics as TaskStatsType } from '../types/Task';
 
 export default function TaskStatistics() {
-  const { statistics } = useTask();
+  const { tasks } = useTask();
+
+  const stats = React.useMemo<TaskStatsType>(() => {
+    const total = tasks.length;
+    const completed = tasks.filter((task) => task.completed).length;
+    const active = total - completed;
+
+    const byPriority = {
+      high: tasks.filter((task) => task.priority === 'high').length,
+      medium: tasks.filter((task) => task.priority === 'medium').length,
+      low: tasks.filter((task) => task.priority === 'low').length,
+    };
+
+    const byCategory = tasks.reduce((acc, task) => {
+      task.categories.forEach(cat => {
+        acc[cat] = (acc[cat] || 0) + 1;
+      });
+      return acc;
+    }, {} as Record<string, number>);
+
+    const completionRate = total > 0 ? Math.round((completed / total) * 100) : 0;
+    const upcomingDeadlines = tasks.filter((task) => {
+      if (!task.deadline || task.completed) return false;
+      const deadline = new Date(task.deadline);
+      const today = new Date();
+      const diffDays = Math.ceil((deadline.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+      return diffDays <= 7 && diffDays >= 0;
+    }).length;
+
+    return {
+      total,
+      completed,
+      active,
+      byPriority,
+      byCategory,
+      completionRate,
+      upcomingDeadlines,
+    };
+  }, [tasks]);
+
+  const getPriorityColor = (priority: Priority): string => {
+    switch (priority) {
+      case 'high': return 'text-red-500';
+      case 'medium': return 'text-yellow-500';
+      case 'low': return 'text-green-500';
+      default: return 'text-gray-500';
+    }
+  };
+
+  if (!tasks) {
+    return (
+      <div className="bg-white dark:bg-gray-800 rounded-lg drive-shadow p-4">
+        <p className="text-center text-[var(--theme-text)]">Loading statistics...</p>
+      </div>
+    );
+  }
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-md">
-      <h2 className="text-lg font-semibold mb-4 text-gray-800 dark:text-white">Task Statistics</h2>
+    <div className="bg-white dark:bg-gray-800 rounded-lg drive-shadow p-4">
+      <h2 className="text-lg font-semibold text-[var(--theme-text)] mb-4">Task Statistics</h2>
       
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="bg-blue-100 dark:bg-blue-900 p-3 rounded-lg">
-          <p className="text-sm text-blue-600 dark:text-blue-200">Total Tasks</p>
-          <p className="text-2xl font-bold text-blue-700 dark:text-blue-100">{statistics.total}</p>
+      <div className="space-y-4">
+        <div className="flex justify-between items-center">
+          <span className="text-sm text-[var(--theme-text)]">Completion Rate</span>
+          <div className="flex items-center">
+            <div className="w-32 h-2 bg-gray-200 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-[var(--theme-primary)] transition-all"
+                style={{ width: `${stats.completionRate}%` }}
+              />
+            </div>
+            <span className="ml-2 text-sm text-[var(--theme-text)]">{stats.completionRate}%</span>
+          </div>
         </div>
-        
-        <div className="bg-green-100 dark:bg-green-900 p-3 rounded-lg">
-          <p className="text-sm text-green-600 dark:text-green-200">Completed</p>
-          <p className="text-2xl font-bold text-green-700 dark:text-green-100">{statistics.completed}</p>
-        </div>
-        
-        <div className="bg-yellow-100 dark:bg-yellow-900 p-3 rounded-lg">
-          <p className="text-sm text-yellow-600 dark:text-yellow-200">Active</p>
-          <p className="text-2xl font-bold text-yellow-700 dark:text-yellow-100">{statistics.active}</p>
-        </div>
-        
-        <div className="bg-purple-100 dark:bg-purple-900 p-3 rounded-lg">
-          <p className="text-sm text-purple-600 dark:text-purple-200">Completion Rate</p>
-          <p className="text-2xl font-bold text-purple-700 dark:text-purple-100">
-            {statistics.total > 0 ? Math.round((statistics.completed / statistics.total) * 100) : 0}%
-          </p>
-        </div>
-      </div>
 
-      <div className="mt-4">
-        <h3 className="text-md font-semibold mb-2 text-gray-700 dark:text-gray-300">By Priority</h3>
-        <div className="grid grid-cols-3 gap-2">
-          <div className="bg-red-50 dark:bg-red-900/30 p-2 rounded">
-            <p className="text-sm text-red-600 dark:text-red-200">High</p>
-            <p className="font-semibold text-red-700 dark:text-red-100">{statistics.byPriority.high}</p>
+        <div className="grid grid-cols-2 gap-4">
+          <div className="text-center p-3 bg-[var(--theme-background)] rounded-lg">
+            <div className="text-2xl font-bold text-[var(--theme-primary)]">{stats.active}</div>
+            <div className="text-sm text-[var(--theme-text)]">Active Tasks</div>
           </div>
-          <div className="bg-orange-50 dark:bg-orange-900/30 p-2 rounded">
-            <p className="text-sm text-orange-600 dark:text-orange-200">Medium</p>
-            <p className="font-semibold text-orange-700 dark:text-orange-100">{statistics.byPriority.medium}</p>
-          </div>
-          <div className="bg-green-50 dark:bg-green-900/30 p-2 rounded">
-            <p className="text-sm text-green-600 dark:text-green-200">Low</p>
-            <p className="font-semibold text-green-700 dark:text-green-100">{statistics.byPriority.low}</p>
+          <div className="text-center p-3 bg-[var(--theme-background)] rounded-lg">
+            <div className="text-2xl font-bold text-[var(--theme-secondary)]">{stats.completed}</div>
+            <div className="text-sm text-[var(--theme-text)]">Completed</div>
           </div>
         </div>
-      </div>
 
-      {Object.keys(statistics.byCategory).length > 0 && (
-        <div className="mt-4">
-          <h3 className="text-md font-semibold mb-2 text-gray-700 dark:text-gray-300">By Category</h3>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-            {Object.entries(statistics.byCategory).map(([category, count]) => (
-              <div key={category} className="bg-gray-50 dark:bg-gray-700 p-2 rounded">
-                <p className="text-sm text-gray-600 dark:text-gray-200">{category}</p>
-                <p className="font-semibold text-gray-700 dark:text-gray-100">{count}</p>
+        <div className="space-y-2">
+          <h3 className="text-sm font-medium text-[var(--theme-text)]">Priority Distribution</h3>
+          <div className="space-y-1">
+            {Object.entries(stats.byPriority).map(([priority, count]) => (
+              <div key={priority} className="flex justify-between items-center">
+                <span className={`text-sm capitalize ${getPriorityColor(priority as Priority)}`}>
+                  {priority}
+                </span>
+                <span className="text-sm font-medium text-[var(--theme-text)]">{count}</span>
               </div>
             ))}
           </div>
         </div>
-      )}
+
+        {stats.upcomingDeadlines > 0 && (
+          <div className="p-3 bg-[var(--theme-background)] rounded-lg">
+            <div className="text-center">
+              <div className="text-2xl font-bold text-[var(--theme-accent)]">
+                {stats.upcomingDeadlines}
+              </div>
+              <div className="text-sm text-[var(--theme-text)]">Upcoming Deadlines</div>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
