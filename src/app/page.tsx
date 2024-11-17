@@ -1,13 +1,13 @@
 'use client';
 
-import React, { useState, Fragment } from 'react';
+import React, { useState } from 'react';
 import { useTask } from '../context/TaskContext';
 import TaskCard from '../components/TaskCard';
 import TaskStatistics from '../components/TaskStatistics';
 import TaskFilter from '../components/TaskFilter';
 import TodoForm from '../components/TodoForm';
 import { Task } from '../types/Task';
-import { DragDropContext, Droppable } from '@hello-pangea/dnd';
+import { DragDropContext, Droppable, DropResult } from '@hello-pangea/dnd';
 
 export default function Home() {
   const { addTask, getFilteredTasks, reorderTasks } = useTask();
@@ -20,7 +20,7 @@ export default function Home() {
     setIsFormOpen(false);
   };
 
-  const handleDragEnd = (result: any) => {
+  const handleDragEnd = (result: DropResult) => {
     if (!result.destination) return;
     reorderTasks(result.source.index, result.destination.index);
   };
@@ -151,7 +151,7 @@ export default function Home() {
 
             {/* Task List */}
             <DragDropContext onDragEnd={handleDragEnd}>
-              <Fragment>
+              <div className="space-y-4">
                 {Object.entries(groupedTasks).map(([group, groupTasks]) => (
                   <div key={group} className="space-y-4">
                     <h3 className="text-lg font-medium text-gray-900 dark:text-white">
@@ -173,7 +173,7 @@ export default function Home() {
                     </Droppable>
                   </div>
                 ))}
-              </Fragment>
+              </div>
             </DragDropContext>
           </div>
 
