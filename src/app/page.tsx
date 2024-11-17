@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, ReactNode } from 'react';
+import React, { useState, Fragment } from 'react';
 import { useTask } from '../context/TaskContext';
 import TaskCard from '../components/TaskCard';
 import TaskStatistics from '../components/TaskStatistics';
@@ -151,27 +151,29 @@ export default function Home() {
 
             {/* Task List */}
             <DragDropContext onDragEnd={handleDragEnd}>
-              {Object.entries(groupedTasks).map(([group, groupTasks]): ReactNode => (
-                <div key={group} className="space-y-4">
-                  <h3 className="text-lg font-medium text-gray-900 dark:text-white">
-                    {group}
-                  </h3>
-                  <Droppable droppableId={group}>
-                    {(provided) => (
-                      <div
-                        ref={provided.innerRef}
-                        {...provided.droppableProps}
-                        className="space-y-4"
-                      >
-                        {groupTasks.map((task, index) => (
-                          <TaskCard key={task.id} task={task} index={index} />
-                        ))}
-                        {provided.placeholder}
-                      </div>
-                    )}
-                  </Droppable>
-                </div>
-              ))}
+              <Fragment>
+                {Object.entries(groupedTasks).map(([group, groupTasks]) => (
+                  <div key={group} className="space-y-4">
+                    <h3 className="text-lg font-medium text-gray-900 dark:text-white">
+                      {group}
+                    </h3>
+                    <Droppable droppableId={group}>
+                      {(provided) => (
+                        <div
+                          ref={provided.innerRef}
+                          {...provided.droppableProps}
+                          className="space-y-4"
+                        >
+                          {groupTasks.map((task, index) => (
+                            <TaskCard key={task.id} task={task} index={index} />
+                          ))}
+                          {provided.placeholder}
+                        </div>
+                      )}
+                    </Droppable>
+                  </div>
+                ))}
+              </Fragment>
             </DragDropContext>
           </div>
 
