@@ -151,29 +151,29 @@ export default function Home() {
 
             {/* Task List */}
             <DragDropContext onDragEnd={handleDragEnd}>
-              <div className="space-y-4">
-                {Object.entries(groupedTasks).map(([group, groupTasks]) => (
-                  <div key={group} className="space-y-4">
-                    <h3 className="text-lg font-medium text-gray-900 dark:text-white">
-                      {group}
-                    </h3>
-                    <Droppable droppableId={group}>
-                      {(provided) => (
-                        <div
-                          ref={provided.innerRef}
-                          {...provided.droppableProps}
-                          className="space-y-4"
-                        >
+              <Droppable droppableId="all-tasks">
+                {(provided) => (
+                  <div 
+                    ref={provided.innerRef}
+                    {...provided.droppableProps}
+                    className="space-y-4"
+                  >
+                    {Object.entries(groupedTasks).map(([group, groupTasks]) => (
+                      <div key={group} className="space-y-4">
+                        <h3 className="text-lg font-medium text-gray-900 dark:text-white">
+                          {group}
+                        </h3>
+                        <div className="space-y-4">
                           {groupTasks.map((task, index) => (
                             <TaskCard key={task.id} task={task} index={index} />
                           ))}
-                          {provided.placeholder}
                         </div>
-                      )}
-                    </Droppable>
+                      </div>
+                    ))}
+                    {provided.placeholder}
                   </div>
-                ))}
-              </div>
+                )}
+              </Droppable>
             </DragDropContext>
           </div>
 
